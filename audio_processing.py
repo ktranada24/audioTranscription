@@ -44,7 +44,7 @@ def isolate_vocals_rnnoise_optimized(chunk_48k_int16, vad_threshold=0.6):
     
     # Downsample directly to 16kHz for Nikhil (Exact 1:3 ratio)
     clean_16k_float = signal.resample_poly(clean_48k_float, up=1, down=3)
-    
+    clean_16k_float = clean_16k_float - np.mean(clean_16k_float) # removes DC offset
     return clean_16k_float.astype(np.float32)
 
 def stream_48k_file_to_pipeline(file_path, pipeline_queue, chunk_size=4800):
