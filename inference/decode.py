@@ -1,0 +1,68 @@
+import torch
+from asr_model import ASRModel
+from asr_dataset import (
+    load_audio_file,
+    waveform_to_log_mel,
+    ASRDataset
+)
+
+from asr_decoder import ctc_decode
+
+
+def load_model(checkpoint_path: str = "checkpoints/asr.pt" ) -> ASRModel:
+    # Build model architecture
+    model = ASRModel()
+    # Load learned weights
+    model.load_state_dict(torch.load(checkpoint_path))
+    # Switch to inference mode
+    model.eval()
+    
+    return model 
+
+  
+def transcribe_audio(audio_path: str , model: ASRModel) -> str:
+    waveform = load_audio_file(audio_path)
+    waveform = waveform.numpy()
+    
+    dataset = ASRDataset([])
+    
+    features = waveform_to_log_mel(waveform, dataset.mel_filterbank)
+    features = features.unsqueeze(0)
+    
+    with torch.no_grad():
+        logits = model(features)
+        
+        probs = torch.softmax(logits, dim=2)
+        
+        top_probs, top_ids = probs[0].max(dim=1)
+        
+        print("num nonblank frames:", (top_ids != 0).sum().item())
+        print("blank prob mean:", probs[0, :, 0].mean().item())
+        print("blank prob min:", probs[0, :, 0].min().item())
+        print("first nonblank ids:", top_ids[top_ids != 0][:50])
+        
+        prediction = logits.argmax(dim=2)
+        text = ctc_decode(prediction)
+    return text 
+    
+
+
+if __name__ == "__main__":
+
+    model = load_model()
+
+    text = transcribe_audio(
+
+        "data/clip_010.wav",
+
+        model
+
+    )
+
+    print(
+
+        "prediction:",
+
+        repr(text)
+
+    )

@@ -1,2 +1,14 @@
 *.wpr
 *.wpu
+
+cache/
+checkpoints/
+__pycache__/
+
+*.pt
+
+*.wav
+
+*.m4a
+
+.DS_Store
