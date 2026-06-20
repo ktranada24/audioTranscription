@@ -1,12 +1,12 @@
 import torch
 
-from asr_vocab import CHAR_TO_ID
+from dataset.asr_vocab import CHAR_TO_ID
 
 from torch.utils.data import Dataset
 
 import numpy as np
 
-from asr_features import (
+from features.asr_features import (
     Chunk_to_Frames,
     apply_hamming_window,
     compute_spectrogram,

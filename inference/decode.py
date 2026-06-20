@@ -1,6 +1,6 @@
 import torch
-from asr_model import ASRModel
-from asr_dataset import (
+from model.asr_model import ASRModel
+from dataset.asr_dataset import (
     load_audio_file,
     waveform_to_log_mel,
     ASRDataset

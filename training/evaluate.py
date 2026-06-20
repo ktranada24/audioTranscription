@@ -1,5 +1,5 @@
-from decode import load_model, transcribe_audio
-from utils import load_metadata
+from inference.decode import load_model, transcribe_audio
+from training.utils import load_metadata
 
 model = load_model()
 

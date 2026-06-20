@@ -1,4 +1,4 @@
-from asr_vocab import ID_TO_CHAR, BLANK_ID
+from dataset.asr_vocab import ID_TO_CHAR, BLANK_ID
 
 
 def ctc_decode(predicted):

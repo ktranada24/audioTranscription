@@ -1,7 +1,5 @@
 import numpy as np
 
-import pyfftw.interfaces.numpy_fft as fft
-
 SAMPLE_RATE = 16_000
 
 CHUNK_SIZE = 1600      # 100 ms, 10 chunks/sec
@@ -29,7 +27,6 @@ def Chunk_to_Frames(
 def apply_hamming_window(frames: np.ndarray) -> np.ndarray:
 
     """
-    Computes the magnitude spectrogram of the input frames using a Real FFT.
     
     Applies a raised-cosine Hamming window to each audio frame,
     attenuating boundary amplitudes to reduce spectral leakage caused by
@@ -72,7 +69,7 @@ def compute_spectrogram(frames: np.ndarray):
     """
     
     # FFT along each row
-    fft_result = fft.rfft(frames, axis=1)  
+    fft_result = np.fft.rfft(frames, axis=1)  
     # Convert complex Fourier coefficients to magnitudes
     magnitude = np.abs(fft_result)
     

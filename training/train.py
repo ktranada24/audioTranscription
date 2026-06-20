@@ -1,10 +1,11 @@
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from asr_model import ASRModel
-from asr_dataset import ASRDataset, collate_asr_batch
-from asr_decoder import ctc_decode
+from model.asr_model import ASRModel
+from dataset.asr_dataset import ASRDataset, collate_asr_batch
+from inference.asr_decoder import ctc_decode
 import csv
 import os
 from utils import load_metadata
@@ -31,7 +32,7 @@ print("device:", device)
 
 
 
-examples = load_metadata("metadata_train.csv")
+examples = load_metadata("metadata/metadata_train.csv")
 
 print("num examples:", len(examples))
 print("first example:", examples[0])

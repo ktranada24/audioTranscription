@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 
-from asr_vocab import VOCAB_SIZE
+from dataset.asr_vocab import VOCAB_SIZE
 
 
 class ASRModel(nn.Module):

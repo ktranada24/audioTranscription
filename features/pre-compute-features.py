@@ -2,7 +2,7 @@ import torch
 
 import os
 
-from asr_dataset import (
+from dataset.asr_dataset import (
 
     load_audio_file,
     waveform_to_log_mel
