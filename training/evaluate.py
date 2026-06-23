@@ -1,9 +1,13 @@
 from inference.decode import load_model, transcribe_audio
 from training.utils import load_metadata
+import random
+from dataset.asr_vocab import VOCAB
 
 model = load_model()
 
-examples = load_metadata("metadata_train.csv")
+examples = load_metadata("metadata/metadata_val.csv")
+
+
 
 def edit_distance(a: str, b: str) -> int:
 
@@ -51,9 +55,67 @@ def character_error_rate(truth: str, pred: str) -> float:
     return edit_distance(truth, pred) / len(truth)
 
 
+total_cer = 0
+
 for audio, truth in examples:
     
     pred = transcribe_audio(audio, model)
+   
+    cer = character_error_rate(truth, pred)
     
+    total_cer += cer
+
     print("truth:", truth)
-    print("pred :", pred)    
+
+    print("pred :", pred)
+
+    print("CER  :", cer)
+
+    print()    
+    
+avg_cer = total_cer / len(examples)
+
+
+
+VOCAB_CHARS = [
+    token
+    for token in VOCAB
+    if token != "<blank>"
+]
+
+def random_prediction(length: int) -> str:
+
+    return "".join(
+
+        random.choice(VOCAB_CHARS)
+
+        for _ in range(length)
+
+    )
+
+trials = 100
+
+trial_cers = []
+
+for _ in range(trials):
+
+    total_cer = 0.0
+
+    for audio_path, truth in examples:
+
+        pred = random_prediction(len(truth))
+
+        total_cer += character_error_rate(truth, pred)
+
+    trial_cers.append(total_cer / len(examples))
+
+baseline_cer = sum(trial_cers) / len(trial_cers)
+
+print("random baseline CER mean:", baseline_cer)
+
+print("average CER:", avg_cer)
+
+print("Skill score:", 1 - (avg_cer/baseline_cer))
+
+    
+   

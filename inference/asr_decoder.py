@@ -3,7 +3,7 @@ from dataset.asr_vocab import ID_TO_CHAR, BLANK_ID
 
 def ctc_decode(predicted):
     
-    """Converts frame-by-frame CTC predictions into readable text."""
+    """"Converts frame-by-frame CTC predictions into readable text."""
     
     ids = predicted[0].tolist()
     collapsed = []

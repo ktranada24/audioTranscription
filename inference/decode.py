@@ -6,7 +6,7 @@ from dataset.asr_dataset import (
     ASRDataset
 )
 
-from asr_decoder import ctc_decode
+from inference.asr_decoder import ctc_decode
 
 
 def load_model(checkpoint_path: str = "checkpoints/asr.pt" ) -> ASRModel:

@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,7 +7,7 @@ from dataset.asr_dataset import ASRDataset, collate_asr_batch
 from inference.asr_decoder import ctc_decode
 import csv
 import os
-from utils import load_metadata
+from training.utils import load_metadata
 
 
 os.makedirs(
@@ -80,7 +79,7 @@ optimizer = torch.optim.AdamW(
 )
 
 
-for epoch in range(20):
+for epoch in range(400):
 
     total_loss = 0.0
 
@@ -155,4 +154,3 @@ for epoch in range(20):
 
 
 
-print( "total time:", end - start)
