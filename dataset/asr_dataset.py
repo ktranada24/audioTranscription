@@ -223,7 +223,82 @@ class ASRDataset(Dataset):
     
         return features, target_ids
     
-    
+
+class LibriSpeechASRDataset(Dataset):
+
+    def __init__(
+        self,
+        root: str = "data/librispeech",
+        url: str = "dev-clean",
+        limit: int | None = None,
+        use_cache: bool = True
+    ):
+        self.dataset = torchaudio.datasets.LIBRISPEECH(
+            root=root,
+            url=url,
+            download=False
+        )
+
+        if limit is not None:
+            self.dataset = torch.utils.data.Subset(
+                self.dataset,
+                range(limit)
+            )
+
+        self.use_cache = use_cache
+        self.cache_dir = "data/cache/librispeech"
+        os.makedirs(self.cache_dir, exist_ok=True)
+
+        self.mel_filterbank = build_mel_filterbank(
+            sample_rate=16000,
+            n_fft_bins=201,
+            n_mels=80
+        )
+
+    def __len__(self) -> int:
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        waveform, sample_rate, transcript, speaker_id, chapter_id, utterance_id = self.dataset[idx]
+
+        cache_path = os.path.join(
+            self.cache_dir,
+            f"{speaker_id}_{chapter_id}_{utterance_id}.pt"
+        )
+
+        target_ids = text_to_ids(transcript)
+
+        if self.use_cache:
+            try:
+                features = torch.load(cache_path)
+                return features, target_ids
+            except FileNotFoundError:
+                pass
+
+        if waveform.shape[0] > 1:
+            waveform = waveform.mean(dim=0, keepdim=True)
+
+        if sample_rate != 16000:
+            resampler = torchaudio.transforms.Resample(
+                orig_freq=sample_rate,
+                new_freq=16000
+            )
+            waveform = resampler(waveform)
+
+        waveform = waveform.squeeze(0).numpy()
+
+        features = waveform_to_log_mel(
+            waveform,
+            self.mel_filterbank
+        )
+
+        if self.use_cache:
+            torch.save(features, cache_path)
+
+        return features, target_ids
+
+
+   
 def collate_asr_batch(batch):
     
     """

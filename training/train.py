@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from model.asr_model import ASRModel
-from dataset.asr_dataset import ASRDataset, collate_asr_batch
+from dataset.asr_dataset import ASRDataset, LibriSpeechASRDataset, collate_asr_batch
 from inference.asr_decoder import ctc_decode
 import csv
 import os
@@ -31,14 +31,20 @@ print("device:", device)
 
 
 
-examples = load_metadata("metadata/metadata_train.csv")
 
-print("num examples:", len(examples))
-print("first example:", examples[0])
-print("last example:", examples[-1])
+#dataset = ASRDataset(examples, use_cache = True )
 
+dataset = LibriSpeechASRDataset(
 
-dataset = ASRDataset(examples, use_cache = True )
+    root="data/librispeech",
+
+    url="dev-clean",
+
+    limit=100,
+
+    use_cache=True
+
+)
 
 loader = DataLoader(
     dataset,
@@ -49,6 +55,7 @@ loader = DataLoader(
 )
 
 
+print("dataset size:", len(dataset))
 
 model = ASRModel().to(device)
 
@@ -79,7 +86,7 @@ optimizer = torch.optim.AdamW(
 )
 
 
-for epoch in range(400):
+for epoch in range(5):
 
     total_loss = 0.0
 
@@ -139,6 +146,7 @@ for epoch in range(400):
     avg_loss = total_loss / len(loader)
 
     print(epoch, avg_loss)
+      
 
     if epoch % 100 == 0:
 
