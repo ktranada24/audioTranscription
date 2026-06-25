@@ -16,6 +16,7 @@ from features.asr_features import (
 )
 
 import torchaudio
+
 import os
 
 
@@ -36,10 +37,11 @@ def normalize_transcript(text: str) -> str:
     """
     
     text = text.lower()
+    
     allowed_chars = set(CHAR_TO_ID.keys())
     allowed_chars.remove("<blank>")
-    text = "".join(
-        char for char in text if char in allowed_chars)
+    
+    text = "".join(char for char in text if char in allowed_chars)
     
     return text
 
@@ -60,18 +62,16 @@ def text_to_ids(text: str) -> torch.Tensor:
         torch.Tensor: 1D tensor of token indices. Shape: (num_tokens,), Data Type: torch.long
     """
     
-    
     text = normalize_transcript(text)
-    ids = [
-        CHAR_TO_ID[char]
-        for char in text ]
+    ids = [CHAR_TO_ID[char] for char in text ]
 
     return torch.tensor(ids, dtype=torch.long)
 
 
 def waveform_to_log_mel( waveform: np.ndarray, mel_filterbank: np.ndarray) -> torch.Tensor :
     
-    """Extracts log-mel filterbank energies from raw audio frames.
+    """
+    Extracts log-mel filterbank energies from raw audio frames.
     
     This modular wrapper acts as the feature extraction node inside the ASR pipeline,
     transforming physical sound waves into standardized neural-network-ready features.
@@ -81,22 +81,16 @@ def waveform_to_log_mel( waveform: np.ndarray, mel_filterbank: np.ndarray) -> to
     
     Returns:
         torch.Tensor: Log-mel spectrogram feature matrix. Shape: (num_frames, 80)
-        """
+    """
     
     frames = Chunk_to_Frames(waveform)
     frames = apply_hamming_window(frames)
     spec = compute_spectrogram(frames)
 
-
-    mel = apply_mel_filterbank(
-        spec,
-        mel_filterbank)
-
+    mel = apply_mel_filterbank(spec, mel_filterbank)
     log_mel = compute_log_mel(mel)
 
-    return torch.tensor(
-        log_mel,
-        dtype=torch.float32)
+    return torch.tensor( log_mel, dtype=torch.float32)
 
 
 def load_audio_file(audio_path: str) -> torch.Tensor:
@@ -123,13 +117,10 @@ def load_audio_file(audio_path: str) -> torch.Tensor:
 
     # Resample to 16k if needed
     if sample_rate != 16000:
-        resampler = torchaudio.transforms.Resample(
-            orig_freq=sample_rate,
-            new_freq=16000
-        )
+        resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)
         waveform = resampler(waveform)
 
-    # Remove channel dimension: (1, samples) -> (samples,)
+    # Remove channel dimension
     waveform = waveform.squeeze(0)
 
     return waveform
@@ -141,8 +132,8 @@ class ASRDataset(Dataset):
     A custom PyTorch Dataset for map-style loading of acoustic-text pairs featuring a disk-caching mechanism.
     It includes an efficient file-system caching layer that stores extracted feature tensors on disk and reuses them across epochs,
     avoiding repeated DSP computation.
-    """
     
+    """
 
     def __init__(self, examples: list[tuple[str, str]], use_cache =True):
 
@@ -160,11 +151,7 @@ class ASRDataset(Dataset):
             build_mel_filterbank(
             sample_rate=16000,
             n_fft_bins= 201,
-            n_mels=80
-        
-            )
-        
-        )
+            n_mels=80 ) )
         
         self.use_cache = use_cache
         
@@ -230,47 +217,47 @@ class LibriSpeechASRDataset(Dataset):
         self,
         root: str = "data/librispeech",
         url: str = "dev-clean",
+        start: int = 0,
         limit: int | None = None,
-        use_cache: bool = True
+        use_cache: bool = True,         
+        return_transcript: bool = False  
     ):
-        self.dataset = torchaudio.datasets.LIBRISPEECH(
-            root=root,
-            url=url,
-            download=False
-        )
+        
+        full_dataset = torchaudio.datasets.LIBRISPEECH(root=root, url=url, download=False)
 
-        if limit is not None:
-            self.dataset = torch.utils.data.Subset(
-                self.dataset,
-                range(limit)
-            )
+        if limit is None:
+            indices = range(start, len(full_dataset))
+        else:
+            indices = range(start, start + limit)
+
+        self.dataset = torch.utils.data.Subset( full_dataset, indices)
 
         self.use_cache = use_cache
         self.cache_dir = "data/cache/librispeech"
-        os.makedirs(self.cache_dir, exist_ok=True)
 
-        self.mel_filterbank = build_mel_filterbank(
-            sample_rate=16000,
-            n_fft_bins=201,
-            n_mels=80
-        )
+        if self.use_cache:
 
+            os.makedirs(self.cache_dir, exist_ok=True)
+
+        self.mel_filterbank = build_mel_filterbank(sample_rate=16000, n_fft_bins=201, n_mels=80)
+        
+        self.return_transcript = return_transcript
+        
     def __len__(self) -> int:
         return len(self.dataset)
 
     def __getitem__(self, idx):
         waveform, sample_rate, transcript, speaker_id, chapter_id, utterance_id = self.dataset[idx]
 
-        cache_path = os.path.join(
-            self.cache_dir,
-            f"{speaker_id}_{chapter_id}_{utterance_id}.pt"
-        )
+        cache_path = os.path.join(self.cache_dir, f"{speaker_id}_{chapter_id}_{utterance_id}.pt")
 
         target_ids = text_to_ids(transcript)
 
         if self.use_cache:
             try:
                 features = torch.load(cache_path)
+                if self.return_transcript:
+                    return features, target_ids, normalize_transcript(transcript)
                 return features, target_ids
             except FileNotFoundError:
                 pass
@@ -279,24 +266,20 @@ class LibriSpeechASRDataset(Dataset):
             waveform = waveform.mean(dim=0, keepdim=True)
 
         if sample_rate != 16000:
-            resampler = torchaudio.transforms.Resample(
-                orig_freq=sample_rate,
-                new_freq=16000
-            )
+            resampler = torchaudio.transforms.Resample( orig_freq=sample_rate, new_freq=16000)
             waveform = resampler(waveform)
 
         waveform = waveform.squeeze(0).numpy()
 
-        features = waveform_to_log_mel(
-            waveform,
-            self.mel_filterbank
-        )
+        features = waveform_to_log_mel( waveform, self.mel_filterbank)
 
         if self.use_cache:
             torch.save(features, cache_path)
+            
+        if self.return_transcript:
+            return features, target_ids, normalize_transcript(transcript)
 
         return features, target_ids
-
 
    
 def collate_asr_batch(batch):
@@ -363,20 +346,3 @@ def collate_asr_batch(batch):
     
 
 
-if __name__ == "__main__":
-
-    examples = [
-        (
-            "test.wav",
-            "hello my name is nikhil"
-        )
-    ]
-
-    dataset = ASRDataset(
-        examples
-    )
-
-    x, y = dataset[0]
-
-    print(x.shape)
-    print(y)

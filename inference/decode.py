@@ -5,8 +5,8 @@ from dataset.asr_dataset import (
     waveform_to_log_mel,
     ASRDataset
 )
-
-from inference.asr_decoder import ctc_decode
+from inference.asr_decoder import ctc_decode, ctc_beam_decode
+import torch.nn.functional as F
 
 
 def load_model(checkpoint_path: str = "checkpoints/asr.pt" ) -> ASRModel:
@@ -46,23 +46,55 @@ def transcribe_audio(audio_path: str , model: ASRModel) -> str:
     return text 
     
 
+def transcribe_features(features, model):
 
-if __name__ == "__main__":
+    features = features.unsqueeze(0)
 
-    model = load_model()
+    with torch.no_grad():
 
-    text = transcribe_audio(
+        logits = model(features)
 
-        "data/clip_010.wav",
+        prediction = logits.argmax(dim=2)
 
-        model
+        text = ctc_decode(prediction)
 
-    )
+    return text
 
-    print(
 
-        "prediction:",
+def transcribe_features_beam(
 
-        repr(text)
+    features,
 
-    )
+    model,
+
+    beam_width: int = 10
+
+):
+
+    features = features.unsqueeze(0)
+
+    with torch.no_grad():
+
+        logits = model(features)
+
+        log_probs = F.log_softmax(
+
+            logits,
+
+            dim=2
+
+        )
+
+        log_probs = log_probs.squeeze(0)
+
+        text = ctc_beam_decode(
+
+            log_probs,
+
+            beam_width=beam_width
+
+        )
+
+    return text
+
+

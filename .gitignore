@@ -12,3 +12,10 @@ __pycache__/
 *.m4a
 
 .DS_Store
+
+
+echo "data/librispeech/" >> .gitignore
+
+echo "data/cache/" >> .gitignore
+
+echo "*.tar.gz" >> .gitignore

@@ -8,42 +8,36 @@ from inference.asr_decoder import ctc_decode
 import csv
 import os
 from training.utils import load_metadata
+import time 
 
 
-os.makedirs(
-    "checkpoints",
-    exist_ok=True
-)
+os.makedirs("checkpoints", exist_ok=True)
 
-#device = (
 
-    #"mps"
+mode = "cpu"  # "cpu" or "hybrid"
 
-    #if torch.backends.mps.is_available()
+if mode == "hybrid" and torch.backends.mps.is_available():
+    device = "mps"
+else:
+    device = "cpu"
 
-    #else "cpu"
-
-#)
-
-device = "cpu"
-
+print("mode:", mode)
 print("device:", device)
 
 
+model = ASRModel().to(device)
 
 
 #dataset = ASRDataset(examples, use_cache = True )
 
+
 dataset = LibriSpeechASRDataset(
-
     root="data/librispeech",
-
     url="dev-clean",
-
-    limit=100,
-
-    use_cache=True
-
+    start =0, 
+    limit=500,
+    use_cache=True,  
+    return_transcript = False 
 )
 
 loader = DataLoader(
@@ -57,11 +51,8 @@ loader = DataLoader(
 
 print("dataset size:", len(dataset))
 
-model = ASRModel().to(device)
-
 
 #checkpoint_path = "checkpoints/asr.pt"
-
 #if os.path.exists(checkpoint_path):
     #model.load_state_dict(
         #torch.load(
@@ -69,7 +60,6 @@ model = ASRModel().to(device)
             #map_location=device
         #)
     #)
-
     #print("loaded existing checkpoint")
 
 
@@ -86,33 +76,27 @@ optimizer = torch.optim.AdamW(
 )
 
 
-for epoch in range(5):
+start_time = time.time()
+
+for epoch in range(2):
 
     total_loss = 0.0
 
     for features, targets, input_lengths, target_lengths in loader:
         
-        #features = features.to(device)        
+        features = features.to(device)
+        
         #targets = targets.to(device)        
         
-        targets = torch.cat([
-            
-            t[:length]
-            
-            for t, length in zip(
-                targets,
-                target_lengths
-            )
-
+        targets = torch.cat([   
+            t[:length]   
+            for t, length in zip( targets, target_lengths)
         ])
 
         optimizer.zero_grad(set_to_none=True)
+        
         logits = model(features)
-        log_probs = F.log_softmax(
-
-            logits,
-            dim=2
-        )
+        log_probs = F.log_softmax(logits, dim=2)
 
         log_probs = log_probs.permute(
             1,
@@ -120,23 +104,27 @@ for epoch in range(5):
             2
         )
 
-        loss = ctc(
-            log_probs,
-            targets,
-            input_lengths,
-            target_lengths
-
-        )
+        if mode == "hybrid":
+            loss = ctc(
+                log_probs.cpu(),
+                targets.cpu(),
+                input_lengths.cpu(),
+                target_lengths.cpu()
+            )
+    
+        else:
+            loss = ctc(
+                log_probs,
+                targets,
+                input_lengths,
+                target_lengths
+            )
 
         loss.backward()
         
-        
         torch.nn.utils.clip_grad_norm_(
-        
             model.parameters(),
-        
             max_norm=5.0
-        
         )
         
         optimizer.step()        
@@ -148,17 +136,15 @@ for epoch in range(5):
     print(epoch, avg_loss)
       
 
-    if epoch % 100 == 0:
+    if epoch % 10 == 0:
 
-        torch.save(
-
-            model.state_dict(),
-
-            "checkpoints/asr.pt"
-
-        )
+        torch.save( model.state_dict(), "checkpoints/asr.pt")
 
         print("saved checkpoint")
 
+
+end_time = time.time()
+        
+print("total training time:", end_time - start_time)
 
 

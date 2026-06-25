@@ -27,7 +27,6 @@ def Chunk_to_Frames(
 def apply_hamming_window(frames: np.ndarray) -> np.ndarray:
 
     """
-    
     Applies a raised-cosine Hamming window to each audio frame,
     attenuating boundary amplitudes to reduce spectral leakage caused by
     discontinuities at frame edges before FFT/DFT computation.
@@ -64,8 +63,7 @@ def compute_spectrogram(frames: np.ndarray):
 
     Returns:
         np.ndarray: Magnitude spectrogram.
-        Shape: (num_frames, (frame_size/2)+1).
-        
+        Shape: (num_frames, (frame_size/2)+1).      
     """
     
     # FFT along each row
@@ -93,8 +91,7 @@ def build_mel_filterbank(
     f_max: float | None = None
 ) -> np.ndarray:
 
-    """
-    
+    """  
     The filterbank maps linear-frequency FFT bins into perceptually
     spaced mel bins. Frequencies are first converted from Hz to mel,
     evenly subdivided in mel space, then converted back to Hz.
@@ -112,8 +109,7 @@ def build_mel_filterbank(
     Returns:
         np.ndarray: Mel filterbank, each row is one triangular mel filter and each column corresponds to one FFT frequency bin.
         Shape: (n_mels, n_fft_bins).
-
-"""
+    """
 
     if f_max is None:
 
@@ -166,8 +162,7 @@ def apply_mel_filterbank(
     mel_filterbank: np.ndarray
 ) -> np.ndarray:
     
-    """
-    
+    """ 
     Projects a linear-frequency magnitude spectrogram into mel space.
     This operation multiplies the magnitude spectrogram by the transpose
     of the mel filterbank matrix, aggregating neighboring FFT frequency
@@ -206,8 +201,7 @@ def compute_log_mel(
     epsilon: float = 1e-10
 ) -> np.ndarray:
 
-    """
-    
+    """    
     Human auditory perception responds approximately logarithmically to
     sound intensity rather than linearly. Applying the logarithm compresses
     large magnitude differences and expands smaller differences, producing
@@ -224,8 +218,7 @@ def compute_log_mel(
     Returns:
         np.ndarray:
         Log-mel spectrogram.
-        Shape: (num_frames, n_mels)
-        
+        Shape: (num_frames, n_mels)       
     """
     
     return np.log(mel_spec + epsilon).astype(np.float32, copy=False)
