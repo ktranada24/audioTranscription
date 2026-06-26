@@ -53,48 +53,10 @@ def transcribe_features(features, model):
     with torch.no_grad():
 
         logits = model(features)
-
         prediction = logits.argmax(dim=2)
-
         text = ctc_decode(prediction)
 
     return text
 
-
-def transcribe_features_beam(
-
-    features,
-
-    model,
-
-    beam_width: int = 10
-
-):
-
-    features = features.unsqueeze(0)
-
-    with torch.no_grad():
-
-        logits = model(features)
-
-        log_probs = F.log_softmax(
-
-            logits,
-
-            dim=2
-
-        )
-
-        log_probs = log_probs.squeeze(0)
-
-        text = ctc_beam_decode(
-
-            log_probs,
-
-            beam_width=beam_width
-
-        )
-
-    return text
 
 

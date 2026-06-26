@@ -1,11 +1,7 @@
 import torch
-
 from dataset.asr_vocab import CHAR_TO_ID
-
 from torch.utils.data import Dataset
-
 import numpy as np
-
 from features.asr_features import (
     Chunk_to_Frames,
     apply_hamming_window,
@@ -14,9 +10,7 @@ from features.asr_features import (
     apply_mel_filterbank,
     compute_log_mel
 )
-
 import torchaudio
-
 import os
 
 
@@ -181,13 +175,11 @@ class ASRDataset(Dataset):
                 - features (torch.Tensor): Log-mel spectrogram matrix. Shape: (num_frames, 80)
                 - target_ids (torch.Tensor): 1D sequence of vocabulary IDs. Shape: (num_tokens,)
         """
-        
     
         audio_path, transcript = self.examples[idx]
         target_ids = text_to_ids(transcript)
         cache_name = os.path.basename(audio_path)
         cache_path = ( "cache/" + cache_name + ".pt")
-        
         
         if self.use_cache:
                 
@@ -220,8 +212,7 @@ class LibriSpeechASRDataset(Dataset):
         start: int = 0,
         limit: int | None = None,
         use_cache: bool = True,         
-        return_transcript: bool = False  
-    ):
+        return_transcript: bool = False ):
         
         full_dataset = torchaudio.datasets.LIBRISPEECH(root=root, url=url, download=False)
 

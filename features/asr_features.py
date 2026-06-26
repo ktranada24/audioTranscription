@@ -1,6 +1,6 @@
 import numpy as np
 
-SAMPLE_RATE = 16_000
+SAMPLE_Rate = 16_000
 
 CHUNK_SIZE = 1600      # 100 ms, 10 chunks/sec
 
@@ -10,7 +10,6 @@ HOP_SIZE = 160         # 10 ms
 
 
 def Chunk_to_Frames(
-    
     chunk: np.ndarray,
     frame_size: int = FRAME_SIZE,
     hop_size: int = HOP_SIZE) -> np.ndarray: 
@@ -83,13 +82,11 @@ def mel_to_hz(mel: np.ndarray | float) -> np.ndarray | float:
 
 
 def build_mel_filterbank(
-
     sample_rate: int,
     n_fft_bins: int,
     n_mels: int,
     f_min: float = 0.0,
-    f_max: float | None = None
-) -> np.ndarray:
+    f_max: float | None = None) -> np.ndarray:
 
     """  
     The filterbank maps linear-frequency FFT bins into perceptually
@@ -159,8 +156,7 @@ def build_mel_filterbank(
 
 def apply_mel_filterbank(
     magnitude_spec: np.ndarray,
-    mel_filterbank: np.ndarray
-) -> np.ndarray:
+    mel_filterbank: np.ndarray) -> np.ndarray:
     
     """ 
     Projects a linear-frequency magnitude spectrogram into mel space.
@@ -198,8 +194,7 @@ def apply_mel_filterbank(
 def compute_log_mel(
 
     mel_spec: np.ndarray,
-    epsilon: float = 1e-10
-) -> np.ndarray:
+    epsilon: float = 1e-10) -> np.ndarray:
 
     """    
     Human auditory perception responds approximately logarithmically to

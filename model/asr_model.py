@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
-
 from dataset.asr_vocab import VOCAB_SIZE
 
 
 class ASRModel(nn.Module):
+    
     def __init__(self, n_mels: int = 80, hidden_size: int = 128):
         super().__init__()
 

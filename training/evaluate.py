@@ -1,4 +1,4 @@
-from inference.decode import load_model, transcribe_features, transcribe_features_beam
+from inference.decode import load_model, transcribe_features
 import random
 from dataset.asr_vocab import VOCAB
 from dataset.asr_dataset import LibriSpeechASRDataset
@@ -6,7 +6,7 @@ from dataset.asr_dataset import LibriSpeechASRDataset
 model = load_model()
 
 eval_dataset = LibriSpeechASRDataset(
-    start=500,
+    start=2000,
     limit=100,
     use_cache=True,
     return_transcript=True
@@ -62,11 +62,7 @@ for i in range(len(eval_dataset)):
 
     features, target_ids, truth = eval_dataset[i]
 
-    pred = transcribe_features(
-
-    features,
-
-    model)
+    pred = transcribe_features( features,model)
 
     cer = character_error_rate(truth, pred)
 

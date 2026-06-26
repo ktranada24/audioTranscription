@@ -8,8 +8,10 @@ VOCAB = [
     "'",
 ]
 
+
 CHAR_TO_ID = {char: idx for idx, char in enumerate(VOCAB)}
 ID_TO_CHAR = {idx: char for idx, char in enumerate(VOCAB)}
+
 
 BLANK_ID = CHAR_TO_ID["<blank>"]
 VOCAB_SIZE = len(VOCAB)

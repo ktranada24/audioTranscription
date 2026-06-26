@@ -98,7 +98,7 @@ Next Planned Experiments:
 - Track train/validation CER curves
 - Evaluate regularization and augmentation
 
-#2026-06-24 — LibriSpeech Experiment 02 (Real Dataset Transition)
+#2026-06-24 — LibriSpeech Experiment 02 500+ training samples
 
 Setup
 
