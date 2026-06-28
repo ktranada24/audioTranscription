@@ -44,6 +44,7 @@ def isolate_vocals_rnnoise_optimized(chunk_48k_int16, vad_threshold=0.6):
     
     # Downsample directly to 16kHz for Nikhil (Exact 1:3 ratio)
     clean_16k_float = signal.resample_poly(clean_48k_float, up=1, down=3)
+    clean_16k_float = np.append(clean_16k_float[0], clean_16k_float[1:] - 0.97 * clean_16k_float[:-1]) # Pre emphasis filter
     clean_16k_float = clean_16k_float - np.mean(clean_16k_float) # removes DC offset
     return clean_16k_float.astype(np.float32)
 
@@ -69,7 +70,7 @@ def stream_48k_file_to_pipeline(file_path, pipeline_queue, chunk_size=4800):
                     
                 chunk_48k_int16 = np.frombuffer(raw_bytes, dtype=np.int16)
                 
-                clean_16k_chunk = isolate_vocals_rnnoise_optimized(chunk_48k_int16, vad_threshold=0.0)
+                clean_16k_chunk = isolate_vocals_rnnoise_optimized(chunk_48k_int16, vad_threshold=0.2)
                 
                 if len(clean_16k_chunk) > 0:
                     pipeline_queue.put(clean_16k_chunk, block=True)
@@ -89,7 +90,7 @@ if __name__ == "__main__":
     test_queue = queue.Queue(maxsize=100)
     
     # Define your test file path (Make sure this file exists in your folder!)
-    input_file = "noisy_test_48k.wav"
+    input_file = "uhh.wav"
     output_file = "clean_output_16k.wav"
     
     # 2. Start streaming the file in a background thread (Simulating Kyle's loop)
@@ -130,6 +131,14 @@ if __name__ == "__main__":
             # We just clip it to prevent resampling overshoots from causing static.
             safe_audio = np.clip(full_audio_float32, -32768.0, 32767.0)
         else:
+            # --- PEAK NORMALIZATION ---
+            # Divide by max_amp to bring the loudest peak to 1.0, 
+            # then multiply by 0.9 to give it a 10% safety ceiling, 
+            # then multiply by 32767 to convert to 16-bit integer space.
+            if max_amp > 0:
+                safe_audio = (full_audio_float32 / max_amp) * 0.9 * 32767.0
+            else:
+                safe_audio = full_audio_float32 * 32767.0
             # The data is tiny [-1.0, 1.0], so we DO need to multiply it up
             safe_audio = full_audio_float32 * 32767.0
             
