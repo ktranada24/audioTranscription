@@ -224,10 +224,13 @@ class LibriSpeechASRDataset(Dataset):
         self.dataset = torch.utils.data.Subset( full_dataset, indices)
 
         self.use_cache = use_cache
-        self.cache_dir = "data/cache/librispeech"
+        self.cache_dir = os.path.join(
+            "data",
+            "cache",
+            "librispeech",
+            url)        
 
         if self.use_cache:
-
             os.makedirs(self.cache_dir, exist_ok=True)
 
         self.mel_filterbank = build_mel_filterbank(sample_rate=16000, n_fft_bins=201, n_mels=80)

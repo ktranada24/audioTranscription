@@ -5,15 +5,22 @@ from dataset.asr_dataset import (
     waveform_to_log_mel,
     ASRDataset
 )
-from inference.asr_decoder import ctc_decode, ctc_beam_decode
+from inference.asr_decoder import ctc_decode
 import torch.nn.functional as F
 
 
-def load_model(checkpoint_path: str = "checkpoints/asr.pt" ) -> ASRModel:
+def load_model(checkpoint_path: str = "checkpoints/best_val.pt" ) -> ASRModel:
     # Build model architecture
     model = ASRModel()
-    # Load learned weights
-    model.load_state_dict(torch.load(checkpoint_path))
+    
+    checkpoint = torch.load(   
+        checkpoint_path,    
+        map_location="cpu"   
+    )
+    
+    model.load_state_dict(   
+        checkpoint["model_state"]   
+    )    
     # Switch to inference mode
     model.eval()
     

@@ -2,7 +2,7 @@ import torchaudio
 
 dataset = torchaudio.datasets.LIBRISPEECH(
     root="data/librispeech",
-    url="dev-clean",
+    url="train-clean-100",
     download=True
 )
 

@@ -145,7 +145,81 @@ Next Planned Experiments
 
 - Train 500-sample split for 80 epochs
 - Track train/validation learning curves
-- Compare greedy vs beam-search decoding
-- Bootstrap CER confidence intervals
 - Scale to 1000+ training samples
 - Evaluate augmentation and regularization
+
+
+# 2026-06-26 — LibriSpeech Data Scaling Experiment 
+
+- Model: Character-level BiLSTM acoustic model
+- Input Features:
+  - Framing (25 ms)
+  - Hop Length (10 ms)
+  - Hamming Window
+  - FFT
+  - 80-bin Log-Mel Spectrogram
+- Decoder: Greedy CTC
+- Loss: CTC Loss
+- Optimizer: AdamW
+- Learning Rate: 0.001
+- Weight Decay: 1e-4
+- Batch Size: 4
+- Gradient Clipping: max_norm=5.0
+- Epochs: 80
+- Feature Cache: Enabled
+
+
+- Train-set: 0-500
+- Val-set: 2000-2100
+
+ Results
+
+| Metric                    | Value  |
+|---|---:|
+| Train CER                 | 0.0051 |
+| Validation CER            | 0.6251 |
+| Random Baseline CER.      | 0.9202 |
+| Train Skill Score         | 0.9944 |
+| Validation Skill Score    | 0.3206 |
+
+
+- Train-set: 0-1000
+- Val-set: 2000-2100
+
+ Results
+
+| Metric                    | Value  |
+|---|---:|
+| Train CER                 | 0.0058 |
+| Validation CER            | 0.6035 |
+| Random Baseline CER.      | 0.9212 |
+| Train Skill Score         | 0.9364 |
+| Validation Skill Score    | 0.3445 |
+
+
+- Train-set: 0-1500
+- Val-set: 2000-2100
+
+ Results
+
+| Metric                    | Value  |
+|---|---:|
+| Train CER                 | 0.0062 |
+| Validation CER            | 0.5590 |
+| Random Baseline CER.      | 0.9191 |
+| Train Skill Score         | 0.9317 |
+| Validation Skill Score    | 0.3917 |
+
+
+- Train-set: 0-2000
+- Val-set: 2000-2100
+
+ Results
+
+| Metric                    | Value  |
+|---|---:|
+| Train CER                 | 0.0858 |
+| Validation CER            | 0.4753 |
+| Random Baseline CER.      | 0.9232 |
+| Train Skill Score         | 0.9067 |
+| Validation Skill Score    | 0.4851 |

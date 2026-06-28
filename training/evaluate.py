@@ -2,16 +2,41 @@ from inference.decode import load_model, transcribe_features
 import random
 from dataset.asr_vocab import VOCAB
 from dataset.asr_dataset import LibriSpeechASRDataset
+from training.utils import get_librispeech_split_range
+import torch
 
-model = load_model()
+# train-set 
+start_percent_train = 0.0
+end_percent_train = 0.95
 
-eval_dataset = LibriSpeechASRDataset(
-    start=2000,
-    limit=100,
+# val-set 
+start_percent_val = 0.95
+end_percent_val = 1.00
+
+
+start_train, limit_train =  get_librispeech_split_range(root="data/librispeech",
+    url="train-clean-100",
+    start_percent= start_percent_train,
+    end_percent= end_percent_train)
+
+
+start_val, limit_val =  get_librispeech_split_range(root="data/librispeech",
+    url="train-clean-100",
+    start_percent= start_percent_val,
+    end_percent= end_percent_val)
+
+eval_dataset_train = LibriSpeechASRDataset(
+    start= start_train,
+    limit= limit_train,
     use_cache=True,
-    return_transcript=True
+    return_transcript=True)
 
-)
+eval_dataset_val = LibriSpeechASRDataset(
+    start= start_val,
+    limit= limit_val,
+    use_cache=True,
+    return_transcript= True)
+
 
 def edit_distance(a: str, b: str) -> int:
 
@@ -30,7 +55,6 @@ def edit_distance(a: str, b: str) -> int:
         for j in range(1, len(b) + 1):
 
             if a[i - 1] == b[j - 1]:
-
                 cost = 0
 
             else:
@@ -38,11 +62,8 @@ def edit_distance(a: str, b: str) -> int:
                 cost = 1
 
             dp[i][j] = min(
-
                 dp[i - 1][j] + 1,        # deletion
-
                 dp[i][j - 1] + 1,        # insertion
-
                 dp[i - 1][j - 1] + cost  # substitution
             )
 
@@ -56,66 +77,65 @@ def character_error_rate(truth: str, pred: str) -> float:
 
     return edit_distance(truth, pred) / len(truth)
 
-total_cer = 0
-
-for i in range(len(eval_dataset)):
-
-    features, target_ids, truth = eval_dataset[i]
-
-    pred = transcribe_features( features,model)
-
-    cer = character_error_rate(truth, pred)
-
-    total_cer += cer
-    
-    print("truth:", truth)    
-    print("pred :", pred)    
-    print("CER  :", cer)
-    print()    
 
 
-avg_cer =  total_cer / len(eval_dataset)
-print("average CER:", avg_cer)
-
-
-VOCAB_CHARS = [
-    token
-    for token in VOCAB
-    if token != "<blank>"
-]
+VOCAB_CHARS = [token for token in VOCAB if token != "<blank>"]
 
 def random_prediction(length: int) -> str:
+    return "".join(random.choice(VOCAB_CHARS) for _ in range(length))
 
-    return "".join(
 
-        random.choice(VOCAB_CHARS)
-
-        for _ in range(length)
-
-    )
-
-trials = 10
-
-trial_cers = []
-
-for _ in range(trials):
-
-    total_cer = 0.0
-
-    for i in range(len(eval_dataset)):
+def eval_diagnostics(dataset, inspect_predictions = True, skill_score = True):
+    model = load_model("checkpoints/latest.pt")
+    total_cer = 0
+    
+    for i in range(len(dataset)):
+    
+        features, target_ids, truth = dataset[i]
         
-        features, target_ids, truth = eval_dataset[i]
-
-        pred = random_prediction(len(truth))
+        pred = transcribe_features(features,model)
 
         total_cer += character_error_rate(truth, pred)
+        
+        if inspect_predictions:
+            print("truth:", truth)
+            print("pred :", pred)
+            print("CER  :", character_error_rate(truth, pred))
+        
+    avg_cer =  total_cer / len(dataset)
+    
+    print("average CER:", avg_cer)
+    
+    if not inspect_predictions and not skill_score:
+        return avg_cer
+    
+    if skill_score:
+        
+        trials = 10
+        trial_cers = []
+        
+        for _ in range(trials):
+        
+            total_cer = 0.0
+        
+            for i in range(len(dataset)):
+                
+                features, target_ids, truth = dataset[i]
+        
+                pred = random_prediction(len(truth))
+        
+                total_cer += character_error_rate(truth, pred)
+        
+            trial_cers.append(total_cer / len(dataset))
+        
+        baseline_cer = sum(trial_cers) / len(trial_cers)
+        
+        print("random baseline CER mean:", baseline_cer)
+        
+        print("average CER:", avg_cer)
+        
+        print("Skill score:", 1 - (avg_cer/baseline_cer))
+        
+        
 
-    trial_cers.append(total_cer / len(eval_dataset))
 
-baseline_cer = sum(trial_cers) / len(trial_cers)
-
-print("random baseline CER mean:", baseline_cer)
-
-print("average CER:", avg_cer)
-
-print("Skill score:", 1 - (avg_cer/baseline_cer))
