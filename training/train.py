@@ -23,23 +23,24 @@ end_percent = 0.95
 
 # Save-settings
 use_cache = True
-load_progress = False
-load_best = False
+load_progress = True
+load_best = True
 
 # Optimization-settings
 batch_size = 4
 num_workers = 0
 shuffle = True
-learn_rate = 0.001
+learn_rate = 0.00025
 weight_decay = 1e-4
-clip_grad_maxnorm = 5.0
+clip_grad_maxnorm = 1.0
 
-# Training length 
+# Training length
+start_epoch = 0
 num_epoch = 81
 
 # etc
 return_transcript = False
-
+best_val_cer = None
 
 if mode == "hybrid" and torch.backends.mps.is_available():
     device = "mps"
@@ -87,9 +88,9 @@ optimizer = torch.optim.AdamW(
 
 if load_progress:
     if load_best and os.path.exists('checkpoints/best_val.pt'):
-        model.load_state_dict(torch.load('checkpoints/best_val.pt', map_location=device))
         checkpoint = torch.load("checkpoints/best_val.pt", map_location=device)
         model.load_state_dict(checkpoint["model_state"])
+        optimizer.load_state_dict(checkpoint["optimizer_state"])
         best_val_cer = checkpoint["best_val_cer"]
         start_epoch = checkpoint["epoch"] + 1           
         print("loaded best existing checkpoint")
@@ -97,6 +98,7 @@ if load_progress:
     elif os.path.exists('checkpoints/latest.pt'):
         checkpoint = torch.load("checkpoints/latest.pt", map_location=device)
         model.load_state_dict(checkpoint["model_state"])
+        optimizer.load_state_dict(checkpoint["optimizer_state"])
         best_val_cer = checkpoint["best_val_cer"]
         start_epoch = checkpoint["epoch"] + 1        
         print("loaded latest existing checkpoint")
@@ -107,10 +109,9 @@ ctc = nn.CTCLoss(blank=0, zero_infinity=True)
 
 start_time = time.time()
 
-best_val_cer = None
 patience_counter = 0
 
-for epoch in range(num_epoch):
+for epoch in range(start_epoch, num_epoch):
 
     total_loss = 0.0
 
@@ -141,6 +142,10 @@ for epoch in range(num_epoch):
                 targets,
                 input_lengths,
                 target_lengths)
+            
+        if torch.isnan(loss): 
+            print("NaN loss detected, skipping batch") 
+            continue        
 
         loss.backward()
         
@@ -153,7 +158,7 @@ for epoch in range(num_epoch):
         total_loss += loss.item()
 
     avg_loss = total_loss / len(loader)
-    print(f'Itiration {epoch}:',f'loss {avg_loss}') 
+    print(f'Epoch {epoch}:',f'loss {avg_loss}') 
 
     if epoch % 1 == 0:    
         save_checkpoint(

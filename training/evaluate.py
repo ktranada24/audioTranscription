@@ -25,18 +25,26 @@ start_val, limit_val =  get_librispeech_split_range(root="data/librispeech",
     start_percent= start_percent_val,
     end_percent= end_percent_val)
 
+
 eval_dataset_train = LibriSpeechASRDataset(
-    start= start_train,
-    limit= limit_train,
+    root="data/librispeech",
+    url="train-clean-100",
+    start=start_train,
+    limit=limit_train,
     use_cache=True,
-    return_transcript=True)
+    return_transcript=True
+
+)
 
 eval_dataset_val = LibriSpeechASRDataset(
-    start= start_val,
-    limit= limit_val,
+    root="data/librispeech",
+    url="train-clean-100",
+    start=start_val,
+    limit=limit_val,
     use_cache=True,
-    return_transcript= True)
+    return_transcript=True
 
+)
 
 def edit_distance(a: str, b: str) -> int:
 
