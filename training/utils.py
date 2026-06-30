@@ -2,6 +2,16 @@ import csv
 import torchaudio
 import torch
 
+
+
+model_config = {
+    "input_size": 80,
+    "hidden_size": 256,
+    "num_layers": 2,
+    "vocab_size": 29,
+}
+
+
 def load_metadata(csv_path: str):
 
     examples = []
@@ -24,6 +34,7 @@ def save_checkpoint(path, epoch, model, optimizer, avg_loss, best_val_cer=None):
     torch.save(
         {
             "epoch": epoch,
+            "model_config": model_config,
             "model_state": model.state_dict(),
             "optimizer_state": optimizer.state_dict(),
             "avg_loss": avg_loss,

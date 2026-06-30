@@ -17,14 +17,18 @@ os.makedirs("checkpoints", exist_ok=True)
 # Compute Device Allocation
 mode = "hybrid"  # "cpu" or "hybrid"
 
-# Train-set range
-start_percent = 0.0
-end_percent = 0.95
-
 # Save-settings
 use_cache = True
 load_progress = True
 load_best = True
+
+# Train-set range
+start_percent = 0.0
+end_percent = 0.95
+
+# Training length
+start_epoch = 0
+num_epoch = 81
 
 # Optimization-settings
 batch_size = 4
@@ -33,10 +37,6 @@ shuffle = True
 learn_rate = 0.00025
 weight_decay = 1e-4
 clip_grad_maxnorm = 1.0
-
-# Training length
-start_epoch = 0
-num_epoch = 81
 
 # etc
 return_transcript = False
@@ -49,6 +49,7 @@ else:
 
 print("mode:", mode)
 print("device:", device)
+
 
 
 start, limit =  get_librispeech_split_range(root="data/librispeech",
@@ -143,9 +144,8 @@ for epoch in range(start_epoch, num_epoch):
                 input_lengths,
                 target_lengths)
             
-        if torch.isnan(loss): 
-            print("NaN loss detected, skipping batch") 
-            continue        
+        if not torch.isfinite(loss):
+            raise RuntimeError("Non-finite loss detected. Stopping training before optimizer step.")                
 
         loss.backward()
         
