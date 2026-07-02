@@ -102,7 +102,7 @@ if __name__ == "__main__":
     
     # 3. Collect the output (Simulating Nikhil's loop)
     collected_chunks = []
-    print("🎧 Listening to queue and collecting clean audio...")
+    print("Listening to queue and collecting clean audio...")
     
     while True:
         # Wait up to 5 seconds for a chunk (generous buffer for heavy CPU processing)
