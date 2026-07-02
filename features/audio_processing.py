@@ -139,8 +139,6 @@ if __name__ == "__main__":
                 safe_audio = (full_audio_float32 / max_amp) * 0.9 * 32767.0
             else:
                 safe_audio = full_audio_float32 * 32767.0
-            # The data is tiny [-1.0, 1.0], so we DO need to multiply it up
-            safe_audio = full_audio_float32 * 32767.0
             
         # Safely convert to 16-bit integer
         full_audio_int16 = safe_audio.astype(np.int16)
