@@ -2,9 +2,9 @@ import torch
 from model.asr_model import ASRModel
 from dataset.asr_dataset import (
     load_audio_file,
-    waveform_to_log_mel,
     ASRDataset
 )
+from features.asr_features import waveform_to_log_mel
 from inference.asr_decoder import ctc_decode
 import torch.nn.functional as F
 

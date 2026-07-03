@@ -217,3 +217,28 @@ def compute_log_mel(
     """
     
     return np.log(mel_spec + epsilon).astype(np.float32, copy=False)
+
+
+def waveform_to_log_mel( waveform: np.ndarray, mel_filterbank: np.ndarray) -> torch.Tensor :
+    
+    """
+    Extracts log-mel filterbank energies from raw audio frames.
+    
+    This modular wrapper acts as the feature extraction node inside the ASR pipeline,
+    transforming physical sound waves into standardized neural-network-ready features.
+    
+    Args:
+        waveform (np.ndarray): 1D audio signal sampled at 16kHz. Shape: (samples,)
+    
+    Returns:
+        torch.Tensor: Log-mel spectrogram feature matrix. Shape: (num_frames, 80)
+    """
+    
+    frames = Chunk_to_Frames(waveform)
+    frames = apply_hamming_window(frames)
+    spec = compute_spectrogram(frames)
+
+    mel = apply_mel_filterbank(spec, mel_filterbank)
+    log_mel = compute_log_mel(mel)
+
+    return torch.tensor( log_mel, dtype=torch.float32)
