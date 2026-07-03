@@ -87,6 +87,13 @@ optimizer = torch.optim.AdamW(
     weight_decay= weight_decay
 )
 
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer,
+    mode="min",
+    factor=0.5,
+    patience=2,
+    min_lr=1e-5)
+
 if load_progress:
     if load_best and os.path.exists('checkpoints/best_val.pt'):
         checkpoint = torch.load("checkpoints/best_val.pt", map_location=device)
@@ -174,6 +181,12 @@ for epoch in range(start_epoch, num_epoch):
         if epoch % 3 == 0:
             
             current_cer = eval_diagnostics(eval_dataset_val, inspect_predictions = False, skill_score = False)
+            
+            scheduler.step(current_cer)
+            
+            current_lr = optimizer.param_groups[0]["lr"]
+            
+            print("current learning rate:", current_lr)            
         
             if best_val_cer == None:
                 best_val_cer = current_cer
