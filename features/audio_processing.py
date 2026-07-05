@@ -10,39 +10,56 @@ import queue
 # Initialize the denoiser once, globally
 denoiser = RNNoise(sample_rate=48000)
 
-def isolate_vocals_rnnoise_optimized(chunk_48k_int16, vad_threshold=0.3):
+def rnnoise_denoise_48k_chunk(chunk_48k_int16):
     """
-    Takes a raw 48kHz int16 chunk, cleans it, downsamples to 16kHz float32.
-    Returns an empty array if silence is detected.
+    CORE FUNCTION: RNNoise only. No VAD dropping. No downsampling.
+    Returns: (clean_48k_float, avg_speech_prob)
     """
     clean_frames = []
     speech_probabilities = []
     
-    # Process the chunk (RNNoise automatically slices it into 10ms frames)
     for speech_prob, denoised_frame in denoiser.denoise_chunk(chunk_48k_int16):
-        # FLATTEN the (1, 480) matrix into a standard 1D array of 480 samples
         clean_frames.append(denoised_frame.flatten()) 
-        # Use np.mean() just in case speech_prob also returned as an array!
         speech_probabilities.append(np.mean(speech_prob))
         
     if not clean_frames:
-        return np.array([], dtype=np.float32)
+        return np.array([], dtype=np.float32), 0.0
         
-    # --- VAD LOGIC ---
     avg_speech_prob = sum(speech_probabilities) / len(speech_probabilities)
-    
-    if avg_speech_prob < vad_threshold:
-        return np.array([], dtype=np.float32) 
-    # -----------------
-        
-    # Combine the processed 10ms frames back into a single continuous array
     clean_48k_float = np.concatenate(clean_frames)
     
-    # Downsample directly to 16kHz for Nikhil (Exact 1:3 ratio)
+    return clean_48k_float.astype(np.float32), avg_speech_prob
+
+def _apply_dsp_filters_16k(clean_48k_float):
+    """
+    HELPER FUNCTION: Keeps our math DRY. Applies downsampling, pre-emphasis, and DC removal.
+    """
     clean_16k_float = signal.resample_poly(clean_48k_float, up=1, down=3)
-    clean_16k_float = np.append(clean_16k_float[0], clean_16k_float[1:] - 0.97 * clean_16k_float[:-1]) # Pre emphasis filter
-    clean_16k_float = clean_16k_float - np.mean(clean_16k_float) # removes DC offset
+    clean_16k_float = np.append(clean_16k_float[0], clean_16k_float[1:] - 0.97 * clean_16k_float[:-1])
+    clean_16k_float = clean_16k_float - np.mean(clean_16k_float)
     return clean_16k_float.astype(np.float32)
+
+def kyle_online_preprocess_chunk(chunk_48k_int16, vad_threshold=0.2):
+    """
+    LIVE APP FUNCTION: Calls RNNoise core. Drops audio if silent. Downsamples if speech.
+    """
+    clean_48k_float, avg_speech_prob = rnnoise_denoise_48k_chunk(chunk_48k_int16)
+    
+    if avg_speech_prob < vad_threshold or len(clean_48k_float) == 0:
+        return np.array([], dtype=np.float32)
+        
+    return _apply_dsp_filters_16k(clean_48k_float)
+
+def kyle_training_preprocess_chunk(chunk_48k_int16):
+    """
+    TRAINING FUNCTION: Calls RNNoise core. NEVER drops audio. Downsamples everything.
+    """
+    clean_48k_float, _ = rnnoise_denoise_48k_chunk(chunk_48k_int16)
+    
+    if len(clean_48k_float) == 0:
+        return np.array([], dtype=np.float32)
+        
+    return _apply_dsp_filters_16k(clean_48k_float)
 
 def stream_48k_file_to_pipeline(file_path, pipeline_queue, chunk_size=4800):
     try:
@@ -55,37 +72,32 @@ def stream_48k_file_to_pipeline(file_path, pipeline_queue, chunk_size=4800):
             while True:
                 raw_bytes = wf.readframes(chunk_size)
                 
-                # If we've reached the end of the file, break the loop
                 if not raw_bytes:
                     break
                     
-                # Pad final chunk if necessary
                 if len(raw_bytes) < chunk_size * 2: 
                     raw_bytes = raw_bytes.ljust(chunk_size * 2, b'\x00')
                     
                 chunk_48k_int16 = np.frombuffer(raw_bytes, dtype=np.int16)
-                clean_16k_chunk = isolate_vocals_rnnoise_optimized(chunk_48k_int16, vad_threshold=0.3)
                 
-                # --- NEW DICTIONARY DATA CONTRACT ---
+                # --- USE YOUR NEW ONLINE FUNCTION ---
+                clean_16k_chunk = kyle_online_preprocess_chunk(chunk_48k_int16, vad_threshold=0.3)
+                
                 if len(clean_16k_chunk) > 0:
-                    # Human is speaking, send the audio payload
                     pipeline_queue.put({
                         "status": "SPEECH", 
                         "audio": clean_16k_chunk
                     }, block=True)
                 else:
-                    # VAD triggered silence. Send a timing heartbeat instead of dropping it!
                     pipeline_queue.put({
                         "status": "SILENCE", 
-                        "duration": chunk_duration # tells Nikhil exactly how much time passed
+                        "duration": chunk_duration 
                     }, block=True)
-                # ------------------------------------
                 
                 time.sleep(chunk_duration)
     except Exception as e:
         print(f"Background thread crashed: {e}")
     finally:
-        # THE POISON PILL
         pipeline_queue.put(None)
 
 
