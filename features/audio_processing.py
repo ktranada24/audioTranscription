@@ -115,7 +115,7 @@ if __name__ == "__main__":
     stream_thread.start()
     
     collected_chunks = []
-    print("🎧 Listening to queue and collecting clean audio...")
+    print("Listening to queue and collecting clean audio...")
     
     while True:
         payload = test_queue.get(timeout=5.0)
