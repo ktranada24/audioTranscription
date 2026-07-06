@@ -39,16 +39,20 @@ def _apply_dsp_filters_16k(clean_48k_float):
     clean_16k_float = clean_16k_float - np.mean(clean_16k_float)
     return clean_16k_float.astype(np.float32)
 
-def kyle_online_preprocess_chunk(chunk_48k_int16, vad_threshold=0.2):
+def kyle_online_preprocess_chunk(chunk_48k_int16, vad_threshold=0.2, chunk_duration_ms=100):
     """
-    LIVE APP FUNCTION: Calls RNNoise core. Drops audio if silent. Downsamples if speech.
+    LIVE APP FUNCTION: Calls RNNoise core. 
+    Returns exactly the dictionary format Nikhil requested.
     """
     clean_48k_float, avg_speech_prob = rnnoise_denoise_48k_chunk(chunk_48k_int16)
     
+    # If silence or empty, return the silence heartbeat dictionary
     if avg_speech_prob < vad_threshold or len(clean_48k_float) == 0:
-        return np.array([], dtype=np.float32)
+        return {"type": "silence", "duration_ms": chunk_duration_ms}
         
-    return _apply_dsp_filters_16k(clean_48k_float)
+    # If speech, apply DSP and return the speech dictionary
+    clean_16k_chunk = _apply_dsp_filters_16k(clean_48k_float)
+    return {"type": "speech", "audio": clean_16k_chunk}
 
 def kyle_training_preprocess_chunk(chunk_48k_int16):
     """
@@ -80,26 +84,21 @@ def stream_48k_file_to_pipeline(file_path, pipeline_queue, chunk_size=4800):
                     
                 chunk_48k_int16 = np.frombuffer(raw_bytes, dtype=np.int16)
                 
-                # --- USE YOUR NEW ONLINE FUNCTION ---
-                clean_16k_chunk = kyle_online_preprocess_chunk(chunk_48k_int16, vad_threshold=0.3)
-                
-                if len(clean_16k_chunk) > 0:
-                    pipeline_queue.put({
-                        "status": "SPEECH", 
-                        "audio": clean_16k_chunk
-                    }, block=True)
-                else:
-                    pipeline_queue.put({
-                        "status": "SILENCE", 
-                        "duration": chunk_duration 
-                    }, block=True)
+                # --- NEW: Function handles the dictionary generation! ---
+                payload = kyle_online_preprocess_chunk(
+                    chunk_48k_int16, 
+                    vad_threshold=0.3, 
+                    chunk_duration_ms=100
+                )
+                pipeline_queue.put(payload, block=True)
+                # --------------------------------------------------------
                 
                 time.sleep(chunk_duration)
     except Exception as e:
         print(f"Background thread crashed: {e}")
     finally:
-        pipeline_queue.put(None)
-
+        # THE NEW POISON PILL
+        pipeline_queue.put({"type": "end"})
 
 if __name__ == "__main__":
     print("Starting Audio Processing Test")
@@ -120,18 +119,16 @@ if __name__ == "__main__":
     while True:
         payload = test_queue.get(timeout=5.0)
         
-        # Check for the poison pill
-        if payload is None:
-            print("Poison pill received. File streaming is completely finished.")
+        # Check for Nikhil's new "end" poison pill format
+        if payload["type"] == "end":
+            print("End signal received. File streaming is completely finished.")
             break
             
-        # --- NEW TEST RECEIVER LOGIC ---
-        if payload["status"] == "SPEECH":
+        # Receiver logic based on Nikhil's exact keys
+        if payload["type"] == "speech":
             collected_chunks.append(payload["audio"])
-        elif payload["status"] == "SILENCE":
-            # For our WAV file test, we just ignore silence and keep waiting
+        elif payload["type"] == "silence":
             pass
-        # -------------------------------
             
         test_queue.task_done()
             
