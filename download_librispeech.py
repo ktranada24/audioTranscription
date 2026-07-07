@@ -2,9 +2,8 @@ import torchaudio
 
 dataset = torchaudio.datasets.LIBRISPEECH(
     root="data/librispeech",
-    url="train-clean-100",
-    download=True
-)
+    url="train-other-500",
+    download=True)
 
 print("num samples:", len(dataset))
 

@@ -1,7 +1,7 @@
 import csv
 import torchaudio
 import torch
-
+import torchaudio
 
 
 model_config = {
@@ -22,13 +22,12 @@ def load_metadata(csv_path: str):
 
         for row in reader:
             examples.append(
-                (
-                    row["audio_path"],
-                    row["transcript"]
-                )
-            )
+                (row["audio_path"],
+                row["transcript"]
+                ))
             
     return examples
+
 
 def save_checkpoint(path, epoch, model, optimizer, avg_loss, best_val_cer=None):
     torch.save(
@@ -43,14 +42,12 @@ def save_checkpoint(path, epoch, model, optimizer, avg_loss, best_val_cer=None):
         path
     )
     
-    import torchaudio
     
 def get_librispeech_split_range(  
     root: str,  
     url: str,  
     start_percent: float,  
-    end_percent: float  
-) -> tuple[int, int]:
+    end_percent: float) -> tuple[int, int]:
     
     full_dataset = torchaudio.datasets.LIBRISPEECH( 
         root=root,  

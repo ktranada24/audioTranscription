@@ -1,11 +1,9 @@
 import numpy as np
+import torch 
 
 SAMPLE_Rate = 16_000
-
 CHUNK_SIZE = 1600      # 100 ms, 10 chunks/sec
-
 FRAME_SIZE = 400       # 25 ms
-
 HOP_SIZE = 160         # 10 ms
 
 
@@ -113,27 +111,21 @@ def build_mel_filterbank(
         f_max = sample_rate / 2
 
     # Frequencies represented by FFT bins.
-
     fft_freqs = np.linspace(f_min, f_max, n_fft_bins)
 
     # Convert min/max Hz to mel.
-
     mel_min = hz_to_mel(f_min)
-
     mel_max = hz_to_mel(f_max)
 
     # Need n_mels + 2 points because each triangle needs:
-
+    
     # left edge, center, right edge.
-
     mel_points = np.linspace(mel_min, mel_max, n_mels + 2)
 
     # Convert those mel-spaced points back to Hz.
-
     hz_points = mel_to_hz(mel_points)
 
     # Create empty filterbank.
-
     filterbank = np.zeros((n_mels, n_fft_bins), dtype=np.float32)
 
     for m in range(1, n_mels + 1):

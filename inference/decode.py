@@ -1,9 +1,6 @@
 import torch
 from model.asr_model import ASRModel
-from dataset.asr_dataset import (
-    load_audio_file,
-    ASRDataset
-)
+from dataset.asr_dataset import (load_audio_file, ASRDataset)
 from features.asr_features import waveform_to_log_mel
 from inference.asr_decoder import ctc_decode
 import torch.nn.functional as F
@@ -28,6 +25,7 @@ def load_model(checkpoint_path: str = "checkpoints/best_val.pt" ) -> ASRModel:
 
   
 def transcribe_audio(audio_path: str , model: ASRModel) -> str:
+    
     waveform = load_audio_file(audio_path)
     waveform = waveform.numpy()
     
@@ -58,7 +56,6 @@ def transcribe_features(features, model):
     features = features.unsqueeze(0)
 
     with torch.no_grad():
-
         logits = model(features)
         prediction = logits.argmax(dim=2)
         text = ctc_decode(prediction)

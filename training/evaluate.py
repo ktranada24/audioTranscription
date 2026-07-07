@@ -51,11 +51,9 @@ def edit_distance(a: str, b: str) -> int:
     dp = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
 
     for i in range(len(a) + 1):
-
         dp[i][0] = i
 
     for j in range(len(b) + 1):
-
         dp[0][j] = j
 
     for i in range(1, len(a) + 1):
@@ -66,7 +64,6 @@ def edit_distance(a: str, b: str) -> int:
                 cost = 0
 
             else:
-
                 cost = 1
 
             dp[i][j] = min(
@@ -86,8 +83,8 @@ def character_error_rate(truth: str, pred: str) -> float:
     return edit_distance(truth, pred) / len(truth)
 
 
-
 VOCAB_CHARS = [token for token in VOCAB if token != "<blank>"]
+
 
 def random_prediction(length: int) -> str:
     return "".join(random.choice(VOCAB_CHARS) for _ in range(length))
@@ -99,10 +96,8 @@ def eval_diagnostics(dataset, inspect_predictions = True, skill_score = True):
     
     for i in range(len(dataset)):
     
-        features, target_ids, truth = dataset[i]
-        
+        features, target_ids, truth = dataset[i]  
         pred = transcribe_features(features,model)
-
         total_cer += character_error_rate(truth, pred)
         
         if inspect_predictions:
@@ -138,10 +133,8 @@ def eval_diagnostics(dataset, inspect_predictions = True, skill_score = True):
         
         baseline_cer = sum(trial_cers) / len(trial_cers)
         
-        print("random baseline CER mean:", baseline_cer)
-        
-        print("average CER:", avg_cer)
-        
+        print("random baseline CER mean:", baseline_cer)   
+        print("average CER:", avg_cer)        
         print("Skill score:", 1 - (avg_cer/baseline_cer))
         
         

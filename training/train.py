@@ -66,8 +66,7 @@ dataset = LibriSpeechASRDataset(
     url="train-clean-100",
     start= start,
     limit= limit,
-    use_cache=True,
-)
+    use_cache=True)
 
 
 loader = DataLoader(
@@ -84,8 +83,8 @@ print("dataset size:", len(dataset))
 optimizer = torch.optim.AdamW(
     model.parameters(),
     lr = learn_rate,
-    weight_decay= weight_decay
-)
+    weight_decay= weight_decay)
+
 
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer,
@@ -93,6 +92,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     factor=0.5,
     patience=2,
     min_lr=1e-5)
+
 
 if load_progress:
     if load_best and os.path.exists('checkpoints/best_val.pt'):
@@ -116,7 +116,6 @@ ctc = nn.CTCLoss(blank=0, zero_infinity=True)
 
 
 start_time = time.time()
-
 patience_counter = 0
 
 for epoch in range(start_epoch, num_epoch):
