@@ -30,16 +30,16 @@ def rnnoise_denoise_48k_chunk(chunk_48k_int16):
     
     return clean_48k_float.astype(np.float32), avg_speech_prob
 
-def _apply_dsp_filters_16k(clean_48k_float):
+def _apply_dsp_filters_16k(clean_48k_float): # downsamples audio from 48kHz to 16kHz bc ASR engines usually dislike 48kHz sample rate
     """
     HELPER FUNCTION: Keeps our math DRY. Applies downsampling, pre-emphasis, and DC removal.
     """
     clean_16k_float = signal.resample_poly(clean_48k_float, up=1, down=3)
-    clean_16k_float = np.append(clean_16k_float[0], clean_16k_float[1:] - 0.97 * clean_16k_float[:-1])
-    clean_16k_float = clean_16k_float - np.mean(clean_16k_float)
+    clean_16k_float = np.append(clean_16k_float[0], clean_16k_float[1:] - 0.97 * clean_16k_float[:-1]) # pre emphasis filter
+    clean_16k_float = clean_16k_float - np.mean(clean_16k_float) # DC offset removal.
     return clean_16k_float.astype(np.float32)
 
-def kyle_online_preprocess_chunk(chunk_48k_int16, vad_threshold=0.2, chunk_duration_ms=100):
+def kyle_online_preprocess_chunk(chunk_48k_int16, vad_threshold=0.2, chunk_duration_ms=100): # denoises with rnnoise
     """
     LIVE APP FUNCTION: Calls RNNoise core. 
     Returns exactly the dictionary format Nikhil requested.
@@ -65,7 +65,7 @@ def kyle_training_preprocess_chunk(chunk_48k_int16):
         
     return _apply_dsp_filters_16k(clean_48k_float)
 
-def stream_48k_file_to_pipeline(file_path, pipeline_queue, chunk_size=4800):
+def stream_48k_file_to_pipeline(file_path, pipeline_queue, chunk_size=4800): # chunk size will be 1600 samples later after downsampling 3x
     try:
         with wave.open(file_path, 'rb') as wf:
             assert wf.getframerate() == 48000, "Test file must be 48kHz!"
@@ -79,12 +79,12 @@ def stream_48k_file_to_pipeline(file_path, pipeline_queue, chunk_size=4800):
                 if not raw_bytes:
                     break
                     
-                if len(raw_bytes) < chunk_size * 2: 
+                if len(raw_bytes) < chunk_size * 2: # if nearing eof & remaining samples < 4800, pad with 00 binary data.
                     raw_bytes = raw_bytes.ljust(chunk_size * 2, b'\x00')
                     
                 chunk_48k_int16 = np.frombuffer(raw_bytes, dtype=np.int16)
                 
-                # --- NEW: Function handles the dictionary generation! ---
+                # --- Function handles the dictionary generation ---
                 payload = kyle_online_preprocess_chunk(
                     chunk_48k_int16, 
                     vad_threshold=0.3, 
@@ -100,10 +100,10 @@ def stream_48k_file_to_pipeline(file_path, pipeline_queue, chunk_size=4800):
         # THE NEW POISON PILL
         pipeline_queue.put({"type": "end"})
 
-if __name__ == "__main__":
+if __name__ == "__main__": # main thread
     print("Starting Audio Processing Test")
     
-    test_queue = queue.Queue(maxsize=100)
+    test_queue = queue.Queue(maxsize=100) # the conveyer belt where main waits for audio to come in
     input_file = "uhh.wav"
     output_file = "clean_output_16k.wav"
     
@@ -126,7 +126,8 @@ if __name__ == "__main__":
             
         # Receiver logic based on Nikhil's exact keys
         if payload["type"] == "speech":
-            collected_chunks.append(payload["audio"])
+            collected_chunks.append(payload["audio"]) # main thread grabs NumPy array of downsampled, cleaned speech from dict
+
         elif payload["type"] == "silence":
             pass
             
@@ -139,10 +140,10 @@ if __name__ == "__main__":
         max_amp = np.max(np.abs(full_audio_float32))
         print(f"Diagnostic: Max audio amplitude is {max_amp:.2f}")
         
-        if max_amp > 2.0:
+        if max_amp > 2.0: # checks if max amplitude in whole audio is too loud, clips if yes
             safe_audio = np.clip(full_audio_float32, -32768.0, 32767.0)
         else:
-            if max_amp > 0:
+            if max_amp > 0: # if audio is normal, normalize whole audio file ... (0 is silence, +/- 32767 is ceiling & floor respectively)
                 safe_audio = (full_audio_float32 / max_amp) * 0.9 * 32767.0
             else:
                 safe_audio = full_audio_float32 * 32767.0
