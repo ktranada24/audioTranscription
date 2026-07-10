@@ -118,15 +118,13 @@ def eval_diagnostics(dataset, inspect_predictions = True, skill_score = True):
         trial_cers = []
         
         for _ in range(trials):
-        
+      
             total_cer = 0.0
         
             for i in range(len(dataset)):
                 
                 features, target_ids, truth = dataset[i]
-        
                 pred = random_prediction(len(truth))
-        
                 total_cer += character_error_rate(truth, pred)
         
             trial_cers.append(total_cer / len(dataset))

@@ -21,18 +21,31 @@ common_mispellings = {
 }
 
 
-def postprocess_online(text: str):
-    text = text.strip()
-    text = text.replace('i', 'I')
-    text = text.split()
-    for i in range(len(text)):
-        if text[i] in common_mispellings:
-            text[i] = common_mispellings[text[i]]
-    text = ' '.join(text)
-    
-    return text
+def postprocess_online(text: str) -> str:
 
-print(postprocess_online('cant do   it today sorry mann i am sorry   '))
+    """
+    Applies lightweight cleanup to decoded online ASR text.
+
+    The function:
+    - trims surrounding whitespace
+    - collapses repeated spaces
+    - capitalizes the standalone pronoun "i"
+    - applies curated contraction corrections
+    """
+
+    if not text:
+        return ""
+
+    words = text.split()
+
+    for index, word in enumerate(words):
+        if word == "i":
+            words[index] = "I"
+
+        else:
+            words[index] = common_mispellings.get(word, word)
+
+    return " ".join(words)
 
     
     
