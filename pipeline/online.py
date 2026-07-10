@@ -2,8 +2,8 @@ import queue
 import threading
 import numpy as np
 from features.asr_features import build_mel_filterbank, waveform_to_log_mel
-from inference.decode import load_model, transcribe_features
-from features.audio_processing import stream_48k_file_to_pipeline
+from inference.decode import transcribe_features
+from features.audio_processing import stream_48k_file_to_pipeline, stream_microphone_to_pipeline
 from postprocess.onlineprocess import postprocess_online
 
 SAMPLE_RATE = 16_000
@@ -11,7 +11,6 @@ DECODE_WINDOW_SAMPLES = 16000  # 1 second
 DECODE_STRIDE_SAMPLES = 4800   # 300 ms
 FINALIZE_AFTER_SILENCE_MS = 700
 
-model = load_model("checkpoints/best_val.pt")
 
 def decode_audio(audio: np.ndarray, mel_filterbank, model) -> str:
 
@@ -28,7 +27,10 @@ def decode_audio(audio: np.ndarray, mel_filterbank, model) -> str:
 def run_online(input_file: str, model):
 
     """
-    Run file-simulated online transcription.
+    Run online transcription using either:
+    - live microphone input when input_file is None
+    - simulated streaming from a 48 kHz WAV file otherwise
+    
     Queue event contract:
 
     Speech:
@@ -38,12 +40,10 @@ def run_online(input_file: str, model):
         "duration_ms": 100}
 
     Silence:
-
         {"type": "silence",
         "duration_ms": 100}
 
     End:
-
         {"type": "end"}
 
     """
@@ -53,16 +53,24 @@ def run_online(input_file: str, model):
         sample_rate=16000,
         n_fft_bins=201,
         n_mels=80)
+    
+    if input_file is None:
+        producer_target = stream_microphone_to_pipeline
+        producer_args = (pipeline_queue, )
+    else:
+        producer_target = stream_48k_file_to_pipeline
+        producer_args = (input_file,pipeline_queue)
 
     audio_buffer = np.empty(0, dtype=np.float32)
     
     accumulated_silence_ms = 0
     
     audio_thread = threading.Thread(
-        target=stream_48k_file_to_pipeline,
-        args=(input_file, pipeline_queue),
+        target= producer_target,
+        args= producer_args,
         daemon=True
     )
+    
 
     audio_thread.start()
     
@@ -75,10 +83,11 @@ def run_online(input_file: str, model):
 
         if event_type == "speech":
             audio = event["audio"]
-            sample_rate = event["sample_rate"]
+            
+            #sample_rate = event["sample_rate"]
 
-            if sample_rate != SAMPLE_RATE:
-                raise ValueError(f"Expected {SAMPLE_RATE} Hz audio, got {sample_rate} Hz.")
+            #if sample_rate != SAMPLE_RATE:
+                #raise ValueError(f"Expected {SAMPLE_RATE} Hz audio, got {sample_rate} Hz.")
 
             audio_buffer = np.concatenate((audio_buffer, audio))
 

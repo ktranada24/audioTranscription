@@ -14,3 +14,7 @@ def main():
     elif MODE == "offline":
         model = load_model("checkpoints/best_val.pt")
         run_offline("audio.wav", model)
+        
+        
+if __name__ == "__main__":
+    main()
