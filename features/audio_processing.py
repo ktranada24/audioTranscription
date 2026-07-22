@@ -36,7 +36,7 @@ def _apply_dsp_filters_16k(clean_48k_float): # downsamples audio from 48kHz to 1
     HELPER FUNCTION: Keeps our math DRY. Applies downsampling, pre-emphasis, and DC removal.
     """
     clean_16k_float = signal.resample_poly(clean_48k_float, up=1, down=3)
-    clean_16k_float = np.append(clean_16k_float[0], clean_16k_float[1:] - 0.97 * clean_16k_float[:-1]) # pre emphasis filter
+    # clean_16k_float = np.append(clean_16k_float[0], clean_16k_float[1:] - 0.97 * clean_16k_float[:-1]) # pre emphasis filter
     clean_16k_float = clean_16k_float - np.mean(clean_16k_float) # DC offset removal.
     return clean_16k_float.astype(np.float32)
 
