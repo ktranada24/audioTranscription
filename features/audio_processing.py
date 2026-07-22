@@ -36,7 +36,7 @@ def _apply_dsp_filters_16k(clean_48k_float): # downsamples audio from 48kHz to 1
     HELPER FUNCTION: Keeps our math DRY. Applies downsampling, pre-emphasis, and DC removal.
     """
     clean_16k_float = signal.resample_poly(clean_48k_float, up=1, down=3)
-    clean_16k_float = np.append(clean_16k_float[0], clean_16k_float[1:] - 0.97 * clean_16k_float[:-1]) # pre emphasis filter
+    # clean_16k_float = np.append(clean_16k_float[0], clean_16k_float[1:] - 0.97 * clean_16k_float[:-1]) # pre emphasis filter
     clean_16k_float = clean_16k_float - np.mean(clean_16k_float) # DC offset removal.
     return clean_16k_float.astype(np.float32)
 
@@ -120,7 +120,7 @@ def stream_microphone_to_pipeline(pipeline_queue, chunk_size=4800): # used for s
             frames_per_buffer=chunk_size
         )
         
-        print("🎤 Microphone is live. Start speaking... (Press Ctrl+C to stop)")
+        print("Microphone is live. Start speaking... (Press Ctrl+C to stop)")
         
         while True:
             # Read raw binary data from microphone (4800 samples = 9600 bytes)
