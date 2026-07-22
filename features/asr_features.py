@@ -20,6 +20,12 @@ def Chunk_to_Frames(
         
     return np.stack(frames).astype(np.float32, copy=False)
         
+def remove_dc_offset(signal: np.ndarray) -> np.ndarray:
+    """
+    Removes the DC offset (0 Hz component) from the audio signal 
+    by subtracting the global mean, centering the waveform at 0.
+    """
+    return signal - np.mean(signal)
 
 def apply_hamming_window(frames: np.ndarray) -> np.ndarray:
 
