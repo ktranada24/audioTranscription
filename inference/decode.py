@@ -12,12 +12,10 @@ def load_model(checkpoint_path: str = "checkpoints/best_val.pt" ) -> ASRModel:
     
     checkpoint = torch.load(   
         checkpoint_path,    
-        map_location="cpu"   
-    )
+        map_location="cpu")
     
-    model.load_state_dict(   
-        checkpoint["model_state"]   
-    )    
+    model.load_state_dict(checkpoint["model_state"])
+    
     # Switch to inference mode
     model.eval()
     

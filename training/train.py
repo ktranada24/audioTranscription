@@ -53,7 +53,7 @@ print("device:", device)
 
 
 start, limit =  get_librispeech_split_range(root="data/librispeech",
-    url="train-clean-100",
+    url="train-other-500",
     start_percent= start_percent,
     end_percent= end_percent)
 
@@ -63,7 +63,7 @@ model = ASRModel().to(device)
 
 dataset = LibriSpeechASRDataset(
     root="data/librispeech",
-    url="train-clean-100",
+    url="train-other-500",
     start= start,
     limit= limit,
     use_cache=True)

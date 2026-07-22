@@ -24,7 +24,7 @@ def decode_audio(audio: np.ndarray, mel_filterbank, model) -> str:
     return postprocess_online(prediction)
 
 
-def run_online(input_file: str, model):
+def run_online(input_file: str | None , model):
 
     """
     Run online transcription using either:
@@ -35,9 +35,7 @@ def run_online(input_file: str, model):
 
     Speech:
         {"type": "speech",
-        "audio": np.ndarray,
-        "sample_rate": 16000,
-        "duration_ms": 100}
+        "audio": np.ndarray
 
     Silence:
         {"type": "silence",
@@ -50,7 +48,7 @@ def run_online(input_file: str, model):
     pipeline_queue = queue.Queue(maxsize=100)
     
     mel_filterbank = build_mel_filterbank(
-        sample_rate=16000,
+        sample_rate= SAMPLE_RATE,
         n_fft_bins=201,
         n_mels=80)
     

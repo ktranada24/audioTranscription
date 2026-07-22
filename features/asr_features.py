@@ -10,8 +10,24 @@ HOP_SIZE = 160         # 10 ms
 def Chunk_to_Frames(
     chunk: np.ndarray,
     frame_size: int = FRAME_SIZE,
-    hop_size: int = HOP_SIZE) -> np.ndarray: 
+    hop_size: int = HOP_SIZE) -> np.ndarray:
     
+    chunk = np.asarray(chunk, dtype=np.float32)
+    
+    if chunk.size == 0:
+        return np.empty(
+            (0, frame_size),
+            dtype=np.float32,)
+
+    
+    if chunk.size < frame_size:
+        padding_needed = frame_size - chunk.size
+        chunk = np.pad(
+            chunk,
+            pad_width=(0, padding_needed),
+            mode="constant",
+            constant_values=0,
+        )
     frames = []
     
     for i in range(0, len(chunk) - frame_size + 1, hop_size):   
@@ -231,7 +247,7 @@ def waveform_to_log_mel( waveform: np.ndarray, mel_filterbank: np.ndarray) -> to
     Returns:
         torch.Tensor: Log-mel spectrogram feature matrix. Shape: (num_frames, 80)
     """
-    
+    waveform = remove_dc_offset(waveform)
     frames = Chunk_to_Frames(waveform)
     frames = apply_hamming_window(frames)
     spec = compute_spectrogram(frames)
