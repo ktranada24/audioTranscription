@@ -120,7 +120,7 @@ def stream_microphone_to_pipeline(pipeline_queue, chunk_size=4800): # used for s
             frames_per_buffer=chunk_size
         )
         
-        print("🎤 Microphone is live. Start speaking... (Press Ctrl+C to stop)")
+        print("Microphone is live. Start speaking... (Press Ctrl+C to stop)")
         
         while True:
             # Read raw binary data from microphone (4800 samples = 9600 bytes)
